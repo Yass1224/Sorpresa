@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Para Mi Amore</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <!-- Canvas Confetti Library -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #f7f3ee;
+            --paper-bg: #fffdf9;
+            --text-main: #332d29;
+            --text-accent: #6b4d38;
+            --gold-accent: #d4a373;
+            --highlight: #faedcd;
+            --clip-color: #1a1a1a;
+            --shadow-soft: rgba(0, 0, 0, 0.08);
+            --shadow-medium: rgba(0, 0, 0, 0.15);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(at 10% 10%, rgba(212, 163, 115, 0.08) 0px, transparent 50%),
+                radial-gradient(at 90% 90%, rgba(250, 237, 205, 0.15) 0px, transparent 50%);
+            font-family: 'Cormorant Garamond', serif;
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px 15px 80px 15px;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Canvas de partículas en segundo plano */
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* Contenedor Hoja de Carta */
+        .letter-container {
+            background-color: var(--paper-bg);
+            max-width: 680px;
+            width: 100%;
+            padding: 60px 45px 50px 45px;
+            box-shadow: 
+                0 10px 30px var(--shadow-soft),
+                0 20px 50px rgba(0,0,0,0.05),
+                inset 0 0 100px rgba(245, 237, 227, 0.4);
+            border-radius: 4px;
+            position: relative;
+            z-index: 2;
+            border: 1px solid rgba(212, 163, 115, 0.2);
+            background-image: repeating-linear-gradient(
+                transparent,
+                transparent 31px,
+                rgba(212, 163, 115, 0.05) 31px,
+                rgba(212, 163, 115, 0.05) 32px
+            );
+            line-height: 1.8;
+            margin: auto;
+        }
+
+        /* Clip de Metal de Sujeción (Superior) */
+        .binder-clip {
+            position: absolute;
+            top: -22px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 120px;
+            height: 45px;
+            background: linear-gradient(135deg, #2c2c2c, #111111);
+            border-radius: 4px;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+            z-index: 10;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .binder-clip::before {
+            content: '';
+            position: absolute;
+            width: 90px;
+            height: 16px;
+            border: 3px solid #888;
+            border-bottom: none;
+            border-radius: 10px 10px 0 0;
+            top: -14px;
+        }
+
+        .binder-clip-handle {
+            width: 70px;
+            height: 6px;
+            background: linear-gradient(90deg, #555, #ccc, #555);
+            border-radius: 3px;
+        }
+
+        /* Marco Polaroid */
+        .polaroid-frame {
+            background: #ffffff;
+            padding: 12px 12px 35px 12px;
+            box-shadow: 0 8px 20px var(--shadow-medium);
+            transform: rotate(-1.5deg);
+            margin: 25px auto 40px auto;
+            max-width: 480px;
+            width: 100%;
+            border-radius: 2px;
+            transition: transform 0.4s ease, box-shadow 0.4s ease;
+            position: relative;
+        }
+
+        .polaroid-frame:hover {
+            transform: rotate(0deg) scale(1.02);
+            box-shadow: 0 12px 28px rgba(0,0,0,0.2);
+        }
+
+        .polaroid-img-wrapper {
+            width: 100%;
+            height: 310px;
+            overflow: hidden;
+            background: #000;
+            position: relative;
+        }
+
+        .polaroid-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center;
+            display: block;
+        }
+
+        /* Texto de la Carta */
+        .greeting {
+            font-family: 'Caveat', cursive;
+            font-size: 2.3rem;
+            color: var(--text-accent);
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+
+        .paragraph {
+            font-size: 1.25rem;
+            margin-bottom: 22px;
+            text-align: justify;
+            text-justify: inter-word;
+            color: #3d3531;
+            font-weight: 400;
+            letter-spacing: 0.2px;
+        }
+
+        .highlight-text {
+            background-color: var(--highlight);
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .signature-block {
+            margin-top: 40px;
+            text-align: right;
+            padding-right: 10px;
+        }
+
+        .closing-phrase {
+            font-size: 1.25rem;
+            margin-bottom: 10px;
+        }
+
+        .signature {
+            font-family: 'Caveat', cursive;
+            font-size: 2.8rem;
+            color: var(--text-accent);
+            font-weight: 700;
+            line-height: 1.2;
+        }
+
+        /* Posdata interactiva */
+        .postscript {
+            margin-top: 35px;
+            padding: 18px 22px;
+            background-color: rgba(250, 237, 205, 0.4);
+            border-left: 4px solid var(--gold-accent);
+            border-radius: 0 8px 8px 0;
+            font-size: 1.15rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .postscript:hover {
+            background-color: rgba(250, 237, 205, 0.8);
+            transform: translateX(5px);
+        }
+
+        .postscript-tag {
+            font-weight: 600;
+            color: var(--text-accent);
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        /* Barra de herramientas / Botones flotantes */
+        .controls-bar {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            padding: 10px 22px;
+            border-radius: 30px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+            z-index: 100;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            border: 1px solid rgba(212, 163, 115, 0.3);
+        }
+
+        .btn-action {
+            background: none;
+            border: none;
+            color: var(--text-accent);
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 15px;
+            transition: background 0.2s ease;
+        }
+
+        .btn-action:hover {
+            background: var(--highlight);
+        }
+
+        /* Ajustes Responsivos */
+        @media (max-width: 600px) {
+            body {
+                padding: 30px 10px 80px 10px;
+            }
+            .letter-container {
+                padding: 45px 22px 35px 22px;
+            }
+            .binder-clip {
+                width: 90px;
+                height: 35px;
+                top: -18px;
+            }
+            .polaroid-img-wrapper {
+                height: 230px;
+            }
+            .greeting {
+                font-size: 2rem;
+            }
+            .paragraph {
+                font-size: 1.1rem;
+            }
+            .signature {
+                font-size: 2.3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Canvas de destellos flotantes -->
+    <canvas id="bg-canvas"></canvas>
+
+    <!-- Contenedor Principal de la Carta -->
+    <main class="letter-container">
+        
+        <!-- Clip Metálico de Sujeción superior -->
+        <div class="binder-clip">
+            <div class="binder-clip-handle"></div>
+        </div>
+
+        <!-- Fotografía Estilo Polaroid con el clip -->
+        <div class="polaroid-frame">
+            <div class="polaroid-img-wrapper">
+                <!-- Imagen renderizada mediante SVG de alta calidad de la pareja al atardecer -->
+                <img src="Atardecer.jpeg" alt="Nuestra Foto" class="polaroid-img">
+            </div>
+        </div>
+
+        <!-- Encabezado de la Carta -->
+        <h1 class="greeting">Hola amore!!!!</h1>
+
+        <!-- Cuerpo de la Carta (Texto Completo Verídico) -->
+        <p class="paragraph">
+            Sé que el día de hoy es un día especial por eso quería decirte unas palabras:
+        </p>
+
+        <p class="paragraph">
+            Verte aquí todo guapote con tu traje, me hace sentir muy orgullosa de todo lo que has logrado mi vida...
+        </p>
+
+        <p class="paragraph">
+            Si algo me ha quedado claro en este camino es que eres una persona de un corazón enorme, infinitamente capaz de todo lo que se proponga. La carrera no ha sido nada fácil, ha estado llena de retos y sacrificios, pero el lugar en el que estás el día de hoy es la prueba más bonita de que puedes con esto y con mucho más. Verte superar cada obstáculo solo me hace admirarte aún más, por dentro y por fuera. Eres un ser humano increíble en todos los sentidos.
+        </p>
+
+        <p class="paragraph">
+            Por ejemplo mira a tu alrededor: estás rodeado de personas que te quieren y te estiman muchísimo, y eso no es coincidencia eso dice mucho de la persona que eres, de la huella tan linda que dejas en los demás y de la luz con la que iluminas la vida de quienes te rodeamos.
+        </p>
+
+        <p class="paragraph">
+            Parece increíble que ya hayan pasado <span class="highlight-text">3 años y medio</span> desde que nos conocimos. El tiempo ha volado, así como cuando un día llegaste con el dedo casi mochado por una práctica de taller o cuando no encontrábamos tu barra de aluminio, o también cuando todos estábamos ayudando en tu proyecto jaja yo no hice nada dar apoyo moral jajaja pero como esas muchas cosas que hemos vivido y ha sido tan increíble cada segundo a tu lado. Doy mil gracias a la vida y bendito Dios el día en que nuestros caminos se unieron y pasamos de ser amigos a novios. Ha sido una de las bendiciones más grandes de mi vida acompañarte, verte crecer y llegar hasta aquí.
+        </p>
+
+        <p class="paragraph">
+            Disfruta muchísimo hoy y saca esa sonrisa tan preciosa que tienes y el corazón lleno de orgullo, porque te mereces cada segundo de este momento y todo el éxito que el futuro te tiene preparado.
+        </p>
+
+        <!-- Cierre de la Carta -->
+        <div class="signature-block">
+            <p class="closing-phrase">Te amo con todo mi ser y siempre, siempre estaré aquí para admirarte y celebrarte.</p>
+            <p class="signature">Con mucho amor tu novia Marian</p>
+        </div>
+
+        <!-- Posdata interactiva -->
+        <div class="postscript" id="postscript-btn" onclick="triggerSurprise()">
+            <span class="postscript-tag">✨ Haz clic aquí ✨</span>
+            <strong>Posdata:</strong> espero que te guste tu regalo.
+        </div>
+
+    </main>
+
+    <!-- Barra de controles flotante -->
+    <div class="controls-bar">
+        <button class="btn-action" onclick="triggerSurprise()">
+            <span>❤️</span> Celebrar
+        </button>
+        <button class="btn-action" onclick="window.print()">
+            <span>📄</span> Guardar / Imprimir
+        </button>
+    </div>
+
+    <script>
+        // Efecto de Partículas Doradas/Luz de fondo
+        const canvas = document.getElementById('bg-canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        class Particle {
+            constructor() {
+                this.reset();
+            }
+            reset() {
+                this.x = Math.random() * canvas.width;
+                this.y = canvas.height + Math.random() * 20;
+                this.size = Math.random() * 3 + 1;
+                this.speedY = Math.random() * 0.8 + 0.3;
+                this.opacity = Math.random() * 0.5 + 0.2;
+                this.color = '#d4a373';
+            }
+            update() {
+                this.y -= this.speedY;
+                if (this.y < -10) this.reset();
+            }
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.globalAlpha = this.opacity;
+                ctx.fill();
+            }
+        }
+
+        for (let i = 0; i < 35; i++) {
+            particles.push(new Particle());
+        }
+
+        function animateParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+            requestAnimationFrame(animateParticles);
+        }
+        animateParticles();
+
+        // Lanzador de Confeti/Corazones
+        function triggerSurprise() {
+            // Lluvia de corazones y estrellas
+            confetti({
+                particleCount: 70,
+                spread: 80,
+                origin: { y: 0.85 },
+                colors: ['#d4a373', '#faedcd', '#e69c81', '#ffb366']
+            });
+
+            // Animación adicional lateral
+            setTimeout(() => {
+                confetti({
+                    particleCount: 40,
+                    angle: 60,
+                    spread: 55,
+                    origin: { x: 0 },
+                    colors: ['#d4a373', '#faedcd']
+                });
+                confetti({
+                    particleCount: 40,
+                    angle: 120,
+                    spread: 55,
+                    origin: { x: 1 },
+                    colors: ['#d4a373', '#faedcd']
+                });
+            }, 250);
+        }
+    </script>
+</body>
+</html>
